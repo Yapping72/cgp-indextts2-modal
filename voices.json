@@ -1,0 +1,15 @@
+[
+  {"id": "af_nova",   "file": "af_nova.mp3",   "gender": "female",  "accent": "american"},
+  {"id": "af_heart",  "file": "af_heart.mp3",  "gender": "female",  "accent": "american"},
+  {"id": "af_bella",  "file": "af_bella.mp3",  "gender": "female",  "accent": "american"},
+  {"id": "af_sarah",  "file": "af_sarah.mp3",  "gender": "female",  "accent": "american"},
+  {"id": "af_sky",    "file": "af_sky.mp3",    "gender": "female",  "accent": "american"},
+  {"id": "af_river",  "file": "af_river.mp3",  "gender": "neutral", "accent": "american"},
+  {"id": "bf_emma",   "file": "bf_emma.mp3",   "gender": "female",  "accent": "british"},
+  {"id": "bf_alice",  "file": "bf_alice.mp3",  "gender": "female",  "accent": "british"},
+  {"id": "am_adam",   "file": "am_adam.mp3",   "gender": "male",    "accent": "american"},
+  {"id": "am_echo",   "file": "am_echo.mp3",   "gender": "male",    "accent": "american"},
+  {"id": "am_eric",   "file": "am_eric.mp3",   "gender": "male",    "accent": "american"},
+  {"id": "bm_george", "file": "bm_george.mp3", "gender": "male",    "accent": "british"},
+  {"id": "bm_daniel", "file": "bm_daniel.mp3", "gender": "male",    "accent": "british"}
+]
