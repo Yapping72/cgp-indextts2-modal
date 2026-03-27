@@ -274,15 +274,45 @@ class IndexTTS2:
     def _do_list_voices(self) -> list[dict]:
         return self.voice_meta
 
-    def _do_synthesize(self, text: str, voice_id: str = "default", reference_audio_b64: str | None = None) -> dict:
+    def _do_synthesize(
+        self,
+        text: str,
+        voice_id: str = "default",
+        reference_audio_b64: str | None = None,
+        emotion_hints: dict | None = None,
+    ) -> dict:
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
 
             ref_path = self._resolve_reference(voice_id, tmp_path, reference_audio_b64)
             ref_wav = self._ensure_wav(ref_path, tmp_path)
 
+            # Decode emotion_hints → infer() kwargs (mirrors gen_single() in webui.py)
+            hints = emotion_hints or {}
+            emo_mode = int(hints.get("emo_mode", 0))
+            emo_weight = float(hints.get("emo_weight", 0.65))
+            emo_vector = hints.get("emo_vector")   # pre-normalization list or None
+            emo_text = hints.get("emo_text") or None
+
+            # Build infer() kwargs from mode
+            infer_kwargs: dict = {}
+            if emo_mode == 0 or not hints:
+                # SPEAKER mode: no explicit emotion params — infer uses spk_audio_prompt only
+                pass
+            elif emo_mode == 2 and emo_vector is not None:
+                # VECTOR mode: normalize then pass
+                normalized = self.tts.normalize_emo_vec(emo_vector, apply_bias=True)
+                infer_kwargs["emo_vector"] = normalized
+                infer_kwargs["emo_alpha"] = emo_weight
+            elif emo_mode == 3:
+                # TEXT mode (experimental): Qwen reads emo_text or spoken text
+                infer_kwargs["use_emo_text"] = True
+                infer_kwargs["emo_text"] = emo_text
+                infer_kwargs["emo_alpha"] = emo_weight
+            # Mode 1 (AUDIO) left for future extension — not wired yet
+
             wav_out = tmp_path / f"output_{int(time.time())}.wav"
-            self.tts.infer(spk_audio_prompt=str(ref_wav), text=text, output_path=str(wav_out))
+            self.tts.infer(spk_audio_prompt=str(ref_wav), text=text, output_path=str(wav_out), **infer_kwargs)
 
             mp3_out = tmp_path / "output.mp3"
             _convert_wav_to_mp3(wav_out, mp3_out)
@@ -335,6 +365,14 @@ class IndexTTS2:
         async def health():
             return {"status": "ok"}
 
+        @fast_app.get("/ready")
+        async def ready():
+            """Machine-readable readiness probe — returns READY only after @modal.enter() completes."""
+            from fastapi.responses import JSONResponse as _JSONResponse
+            if hasattr(self, "tts") and hasattr(self, "whisper_model"):
+                return {"status": "READY"}
+            return _JSONResponse(status_code=503, content={"status": "NOT_READY"})
+
         @fast_app.get("/voices")
         async def list_voices_endpoint():
             """List all voices declared in voices.json with their metadata."""
@@ -344,16 +382,23 @@ class IndexTTS2:
             text: str
             voice_id: str = "default"
             reference_audio_b64: Optional[str] = None
+            emotion_hints: Optional[dict] = None  # decoded by _do_synthesize to emo_vector/use_emo_text/etc.
 
         @fast_app.post("/synthesize/sync")
         async def synthesize_sync(body: SynthesizeRequest):
+            from fastapi.responses import JSONResponse as _JSONResponse
+            if not hasattr(self, "tts") or not hasattr(self, "whisper_model"):
+                return _JSONResponse(status_code=503, content={"status": "NOT_READY"})
             if not body.text.strip():
                 raise HTTPException(status_code=422, detail="text must not be empty")
             try:
-                return self._do_synthesize(body.text, body.voice_id, body.reference_audio_b64)
+                result = self._do_synthesize(body.text, body.voice_id, body.reference_audio_b64, body.emotion_hints)
+                return {**result, "status": "SUCCESS"}
             except ValueError as exc:
                 raise HTTPException(status_code=422, detail=str(exc)) from exc
             except Exception as exc:
                 raise HTTPException(status_code=500, detail=f"Synthesis failed: {exc}") from exc
 
         return fast_app
+
+
