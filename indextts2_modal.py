@@ -85,7 +85,7 @@ image = (
         "pip install --no-deps -e /opt/indextts",
         # Voice repo — MP3s committed directly (no LFS), driven by voices.json manifest.
         # To add a voice: commit MP3 + update voices.json → redeploy.
-        "git clone https://github.com/mosesmazal1/cgp-indextts2-modal.git /opt/voices",
+        "git clone https://github.com/Yapping72/cgp-indextts2-modal.git /opt/voices",
     )
     .env({"HF_HOME": "/models", "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"})
 )
