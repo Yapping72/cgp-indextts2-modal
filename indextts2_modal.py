@@ -37,8 +37,9 @@ import modal
 # ── Constants ──────────────────────────────────────────────────────────────────
 MODEL_ID = "IndexTeam/IndexTTS-2"
 APP_NAME = "indextts2-expressive-tts"
-VOICES_DIR = Path("/opt/voices")
-VOICES_MANIFEST = VOICES_DIR / "voices.json"
+VOICES_REPO = Path("/opt/cgp-voices")       # git clone root
+VOICES_DIR = VOICES_REPO / "voices"         # MP3s live here
+VOICES_MANIFEST = VOICES_REPO / "voices.json"  # manifest at repo root
 
 # ── Container image ────────────────────────────────────────────────────────────
 image = (
@@ -85,7 +86,9 @@ image = (
         "pip install --no-deps -e /opt/indextts",
         # Voice repo — MP3s committed directly (no LFS), driven by voices.json manifest.
         # To add a voice: commit MP3 + update voices.json → redeploy.
-        "git clone https://github.com/Yapping72/cgp-indextts2-modal.git /opt/voices",
+        # Clone into /opt/cgp-voices; voices.json and voices/ subdir land there.
+        # VOICES_DIR (/opt/voices) points at the voices/ subdir inside the repo.
+        "git clone https://github.com/Yapping72/cgp-indextts2-modal.git /opt/cgp-voices",
     )
     .env({"HF_HOME": "/models", "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"})
 )
