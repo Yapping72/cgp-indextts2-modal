@@ -294,15 +294,20 @@ class IndexTTS2:
             emo_vector = hints.get("emo_vector")   # pre-normalization list or None
             emo_text = hints.get("emo_text") or None
 
+            bypass_normalize: bool = bool(hints.get("bypass_normalize", False))
+
             # Build infer() kwargs from mode
             infer_kwargs: dict = {}
             if emo_mode == 0 or not hints:
                 # SPEAKER mode: no explicit emotion params — infer uses spk_audio_prompt only
                 pass
             elif emo_mode == 2 and emo_vector is not None:
-                # VECTOR mode: normalize then pass
-                normalized = self.tts.normalize_emo_vec(emo_vector, apply_bias=True)
-                infer_kwargs["emo_vector"] = normalized
+                # VECTOR mode: normalize (default) or bypass for diagnostic/max-intensity use
+                if bypass_normalize:
+                    # Pass raw vector directly — no bias, no cap. Use for testing or max intensity.
+                    infer_kwargs["emo_vector"] = emo_vector
+                else:
+                    infer_kwargs["emo_vector"] = self.tts.normalize_emo_vec(emo_vector, apply_bias=True)
                 infer_kwargs["emo_alpha"] = emo_weight
             elif emo_mode == 3:
                 # TEXT mode (experimental): Qwen reads emo_text or spoken text
