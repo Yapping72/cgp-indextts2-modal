@@ -10,7 +10,7 @@ import httpx
 
 VOICE_ID = "af_sky"
 TIMEOUT = 300.0
-OUT_DIR = Path(__file__).parent / "test_outputs_5"
+OUT_DIR = Path(__file__).parent / "test_outputs_6"
 
 # Shared texts for all emotions
 TEXT_BASELINE = "Welcome to Love Island. Tonight, everything changes."
